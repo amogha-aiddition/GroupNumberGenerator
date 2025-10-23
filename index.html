@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Round-Robin Number</title>
+  <style>
+    body{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:Arial,Helvetica,sans-serif;background:#f7f9fc;margin:0}
+    h1{font-size:1.4rem;color:#333}
+    .number{font-size:6rem;color:#0b63d6;margin:12px}
+    .small{font-size:0.9rem;color:#666}
+  </style>
+</head>
+<body>
+  <h1>Scan assignment</h1>
+  <div class="number" id="num">…</div>
+  <div class="small" id="info"></div>
+
+  <script>
+    const STORAGE_KEY = 'roundRobinAssigned_v1';
+    const API_URL = 'https://script.google.com/macros/s/AKfycbyfGXViRXNBbVjo_ohEXen6dFdjXADCi3szZrg0BfK-h46-RUvY40aUmjkEcIvRNkNGew/exec'; // <-- paste your Apps Script web app URL here
+    const RETRY_MSG = 'Error — try again later';
+
+    function showInfo(msg){
+      document.getElementById('info').textContent = msg;
+    }
+
+    function showNumber(n){
+      document.getElementById('num').textContent = n;
+    }
+
+    async function fetchNumberFromServer(){
+      try {
+        const resp = await fetch(API_URL, { method: 'GET', cache: 'no-store' });
+        if (!resp.ok && resp.status !== 200) {
+          showInfo(RETRY_MSG);
+          return null;
+        }
+        const data = await resp.json();
+        if (data && typeof data.number !== 'undefined') {
+          return data.number;
+        } else {
+          showInfo('Invalid response');
+          return null;
+        }
+      } catch (err) {
+        console.error(err);
+        showInfo(RETRY_MSG);
+        return null;
+      }
+    }
+
+    (async function init(){
+      // If this device already has an assigned number, show it:
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        showNumber(saved);
+        showInfo('This device already assigned — refresh will not change it.');
+        return;
+      }
+
+      showInfo('Requesting assignment…');
+      const number = await fetchNumberFromServer();
+      if (number) {
+        // Save so refresh won't request again
+        localStorage.setItem(STORAGE_KEY, String(number));
+        showNumber(number);
+        showInfo('Assigned. Refresh will not change it on this device.');
+      }
+    })();
+  </script>
+</body>
+</html>
